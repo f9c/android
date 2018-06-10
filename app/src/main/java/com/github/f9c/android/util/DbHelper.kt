@@ -12,19 +12,15 @@ import com.github.f9c.android.contacts.Contact
 import com.github.f9c.client.datamessage.TextMessage
 
 
-class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 4) {
+class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 1) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE CONTACTS (publicKey TEXT primary key, alias TEXT unique, profileIcon BLOB)")
+        db.execSQL("CREATE TABLE MESSAGES (contactRowId INTEGER, sendDate INT, receiveDate INT, message TEXT, read INTEGER, incoming INTEGER)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        if (oldVersion < 2) {
-            db.execSQL("CREATE TABLE MESSAGES (senderRowId INTEGER, sendDate INT, receiveDate INT, message TEXT, read INTEGER)")
-        }
-        if (oldVersion < 4) {
-            db.execSQL("ALTER TABLE MESSAGES ADD COLUMN read INTEGER")
-        }
+
     }
 
     fun contactExistsForAlias(alias: String): Boolean {
@@ -75,13 +71,26 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 4) {
 
         val rowId = loadContactRowId(publicKeyString)
         val contentValues = ContentValues()
-        contentValues.put("senderRowId", rowId)
+        contentValues.put("contactRowId", rowId)
         contentValues.put("sendDate", textMessage.timestamp)
         contentValues.put("receiveDate", System.currentTimeMillis())
         contentValues.put("message", textMessage.msg)
         contentValues.put("read", 0)
+        contentValues.put("incoming", 1)
         writableDatabase.insert("MESSAGES", null, contentValues)
     }
+
+    fun insertSentMessage(contact: Contact, msg: String) {
+        val contentValues = ContentValues()
+        contentValues.put("contactRowId", contact.rowId)
+        contentValues.put("sendDate", System.currentTimeMillis())
+        contentValues.put("receiveDate", System.currentTimeMillis())
+        contentValues.put("message", msg)
+        contentValues.put("read", 1)
+        contentValues.put("incoming", 0)
+        writableDatabase.insert("MESSAGES", null, contentValues)
+    }
+
 
     private fun loadContactRowId(publicKeyString: String): Int {
         val c = readableDatabase.rawQuery("SELECT rowId from CONTACTS WHERE publicKey=?", arrayOf(publicKeyString))
@@ -92,14 +101,11 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 4) {
     }
 
     fun loadContact(contactId: String): Contact {
-
         val c = readableDatabase.rawQuery("SELECT rowId, publicKey, alias, profileIcon from CONTACTS where rowId = ?", arrayOf(contactId))
-
         c.use { c ->
             c.moveToFirst()
             return contactFromRow(c)
         }
-
     }
 
     private fun contactFromRow(c: Cursor) =
@@ -107,15 +113,16 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 4) {
 
     fun loadMessages(contactId: Int): MutableList<Message> {
 
-        val c = readableDatabase.rawQuery("SELECT message  FROM MESSAGES WHERE senderRowId = ? order by receiveDate asc", arrayOf(contactId.toString()))
+        val c = readableDatabase.rawQuery("SELECT message, incoming  FROM MESSAGES WHERE contactRowId = ? order by receiveDate asc", arrayOf(contactId.toString()))
 
         val result = mutableListOf<Message>()
 
         while (c.moveToNext()) {
-            result.add(Message(c.getString(0)))
+            result.add(Message(c.getString(0), c.getInt(1) == 1))
         }
         c.close()
         return result
     }
+
 
 }

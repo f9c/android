@@ -61,7 +61,7 @@ class Contacts : AppCompatActivity() {
             onNewIntent(intent)
         }
 
-        // TODO: Use password to encrypt keys or store in password manager/Autofill API?
+        // TODO: Use password to encrypt keys or store in password manager/OpenYolo API?
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         val publicKeyString = preferences.getString(PUBLIC_KEY, null)
         val privateKeyString = preferences.getString(PRIVATE_KEY, null)
@@ -69,14 +69,17 @@ class Contacts : AppCompatActivity() {
         if (publicKeyString == null || privateKeyString == null) {
             keyPair = createKeyPair()
             saveKeyPair(preferences, keyPair!!)
+            // TODO: show settings dialog
         } else {
             keyPair = loadKeyPair(publicKeyString, privateKeyString)
         }
 
-        fab.setOnClickListener { view ->
+        fab.setOnClickListener { _ ->
             val i = Intent(Intent.ACTION_SEND)
             i.type = "text/html"
             var alias = "nickname" // TODO: make configurable
+            // TODO: Include server name
+            // TODO: Include expiry date
             i.putExtra(Intent.EXTRA_SUBJECT, "f9c contact information from '$alias'")
             val encodedKey = URLEncoder.encode(encodePublicKey(keyPair!!.public), "utf-8")
             i.putExtra(Intent.EXTRA_TEXT, "https://$DEFAULT_SERVER?$ALIAS=$alias&$PUBLIC_KEY=$encodedKey")
@@ -84,7 +87,7 @@ class Contacts : AppCompatActivity() {
             try {
                 startActivity(Intent.createChooser(i, "Send public key link..."))
             } catch (ex: android.content.ActivityNotFoundException) {
-                Toast.makeText(this@Contacts, "There are no apps supporting this action installed.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@Contacts, "There are no apps installed that support this action.", Toast.LENGTH_LONG).show()
             }
         }
 
@@ -241,6 +244,11 @@ class Contacts : AppCompatActivity() {
         super.onStart()
     }
 
+    override fun onDestroy() {
+        unbindService(mConnection)
+        super.onDestroy()
+    }
+
     val mConnection = object : ServiceConnection {
 
         override fun onBindingDied(name: ComponentName?) {
@@ -248,14 +256,12 @@ class Contacts : AppCompatActivity() {
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            Toast.makeText(this@Contacts, "Service is disconnected", Toast.LENGTH_LONG).show();
-            webSocketService = null;
+            webSocketService = null
         }
 
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            Toast.makeText(this@Contacts, "Service is connected", Toast.LENGTH_LONG).show();
-            val mLocalBinder = service as WebSocketService.LocalBinder;
-            webSocketService = mLocalBinder.getServerInstance();
+            val mLocalBinder = service as WebSocketService.LocalBinder
+            webSocketService = mLocalBinder.getServerInstance()
         }
 
     }

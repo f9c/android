@@ -8,15 +8,18 @@
     tools:context=".contacts.Contacts"
     tools:showIn="@layout/chat">
 
+    <!-- TODO: Replace margins with proper layout. -->
     <android.support.v7.widget.RecyclerView
         android:id="@+id/chatHistory"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="?attr/actionBarSize"
+        android:layout_marginBottom="?attr/actionBarSize"
+        android:layout_marginLeft="5px"
+        android:layout_marginRight="5px"
         android:clipChildren="false"
         android:clipToPadding="false"
         android:scrollbars="horizontal"
-        android:visibility="visible"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:visibility="visible" />
 
 </android.support.constraint.ConstraintLayout>

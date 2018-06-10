@@ -35,6 +35,7 @@ class WebSocketService : Service() {
     private var clientKeys: ClientKeys? = null
 
     private val dbHelper: DbHelper = DbHelper(this)
+    private var thread: HandlerThread? = null
 
     public inner class LocalBinder : Binder() {
 
@@ -51,7 +52,6 @@ class WebSocketService : Service() {
 
         override fun handleMessage(msg: Message) {
             if ("startClient" == msg.obj) {
-
                 val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
                 val publicKeyString = preferences.getString(PUBLIC_KEY, null)
                 val privateKeyString = preferences.getString(PRIVATE_KEY, null)
@@ -60,8 +60,8 @@ class WebSocketService : Service() {
                 clientKeys = ClientKeys(keyPair.public, keyPair.private)
 
                 val clientMessageListener = MessageListener();
-                client = Client("195.201.46.160", 8443, clientKeys, clientMessageListener);
-
+                // TODO: get server data from configuration
+                client = Client("195.201.46.160", 443, clientKeys, clientMessageListener);
             }
         }
     }
@@ -84,11 +84,11 @@ class WebSocketService : Service() {
     }
 
     override fun onCreate() {
-        val thread = HandlerThread("WebSocketService",
+        thread = HandlerThread("WebSocketService",
                 Process.THREAD_PRIORITY_BACKGROUND)
-        thread.start()
-        mServiceLooper = thread.looper
-        mServiceHandler = ServiceHandler(thread.looper)
+        thread!!.start()
+        mServiceLooper = thread!!.looper
+        mServiceHandler = ServiceHandler(thread!!.looper)
 
         val msg = mServiceHandler.obtainMessage()
         msg.obj = "startClient"
@@ -102,6 +102,7 @@ class WebSocketService : Service() {
     }
 
     override fun onDestroy() {
+        thread!!.quitSafely()
         Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show()
     }
 
@@ -114,6 +115,8 @@ class WebSocketService : Service() {
             if (msg is TextMessage) {
                 if (dbHelper.contactExistsForPublicKey(RsaKeyToStringConverter.encodePublicKey(msg.senderPublicKey))) {
                     dbHelper.insertMessage(msg)
+                    // TODO: Refresh display
+                    Toast.makeText(this@WebSocketService, "Message received.", Toast.LENGTH_SHORT).show()
                 } else {
                     // TODO: Ask user if we should create an anonymous contact and request profile?
                     Log.e("DbHelper", "No contact found in database.")

@@ -27,7 +27,14 @@ class MessagesAdapter(private var _messages: MutableList<Message>) : RecyclerVie
     override fun getItemCount() = messages.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        (holder.textView.getViewById(R.id.messageText) as TextView).text = messages[position].text
+        val textView = holder.textView.getViewById(R.id.messageText) as TextView
+        val message = messages[position]
+        textView.text = message.text
+        if (message.incoming) {
+            textView.textAlignment = TextView.TEXT_ALIGNMENT_VIEW_START
+        } else {
+            textView.textAlignment = TextView.TEXT_ALIGNMENT_VIEW_END
+        }
     }
 
 }

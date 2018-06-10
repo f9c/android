@@ -42,12 +42,14 @@ class Chat : AppCompatActivity() {
             adapter = messagesAdapter
 
         }
+        scrollToEnd()
 
-        // TODO: implement
         sendChat.setOnClickListener { _ ->
             val msg = chatMessageView.text
             webSocketService!!.sendMessage(contact!!, msg.toString())
-            dbHelper.insertMessage()
+
+            dbHelper.insertSentMessage(contact!!, msg.toString())
+            refreshMessages()
 
             chatMessageView.text.clear()
             val view = currentFocus
@@ -58,6 +60,20 @@ class Chat : AppCompatActivity() {
         }
     }
 
+    private fun refreshMessages() {
+        messagesAdapter!!.messages = dbHelper.loadMessages(contact!!.rowId)
+        scrollToEnd()
+    }
+
+    private fun scrollToEnd() {
+        recyclerView!!.scrollToPosition(messagesAdapter!!.messages.size - 1)
+    }
+
+    override fun onDestroy() {
+        unbindService(mConnection)
+        super.onDestroy()
+    }
+
     override fun onStart() {
         val mIntent = Intent(this, WebSocketService::class.java)
         bindService(mIntent, mConnection, Context.BIND_AUTO_CREATE)
@@ -65,21 +81,19 @@ class Chat : AppCompatActivity() {
     }
 
 
-    val mConnection = object : ServiceConnection {
+    private val mConnection = object : ServiceConnection {
 
         override fun onBindingDied(name: ComponentName?) {
 
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            Toast.makeText(this@Chat, "Service is disconnected", Toast.LENGTH_LONG).show();
-            webSocketService = null;
+            webSocketService = null
         }
 
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            Toast.makeText(this@Chat, "Service is connected", Toast.LENGTH_LONG).show();
-            val mLocalBinder = service as WebSocketService.LocalBinder;
-            webSocketService = mLocalBinder.getServerInstance();
+            val mLocalBinder = service as WebSocketService.LocalBinder
+            webSocketService = mLocalBinder.getServerInstance()
         }
 
     }
