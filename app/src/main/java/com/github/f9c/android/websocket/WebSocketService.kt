@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.*
 import android.preference.PreferenceManager
+import android.support.v4.content.LocalBroadcastManager
 import android.util.Base64
 import android.util.Log
 import android.widget.Toast
@@ -21,7 +22,10 @@ import java.security.PublicKey
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 
-
+object WebSocketServiceConstants {
+    public val MESSAGE_RECEIVED = "CHAT_MESSAGE_RECEIVED"
+    public val CONTACT = "CONTACT"
+}
 class WebSocketService : Service() {
 
     private val PUBLIC_KEY = "PUBLIC_KEY"
@@ -36,8 +40,9 @@ class WebSocketService : Service() {
 
     private val dbHelper: DbHelper = DbHelper(this)
     private var thread: HandlerThread? = null
+    private var broadcaster: LocalBroadcastManager? = null
 
-    public inner class LocalBinder : Binder() {
+    inner class LocalBinder : Binder() {
 
         fun getServerInstance() : WebSocketService {
             return this@WebSocketService
@@ -61,7 +66,11 @@ class WebSocketService : Service() {
 
                 val clientMessageListener = MessageListener();
                 // TODO: get server data from configuration
-                client = Client("195.201.46.160", 443, clientKeys, clientMessageListener);
+                client = Client("195.201.46.160", 444, clientKeys, clientMessageListener);
+            } else if (msg.obj is SendTextMessage) {
+                val stm = msg.obj as SendTextMessage
+                val textMessage = TextMessage(stm.msg, clientKeys!!.publicKey)
+                client!!.sendDataMessage(loadPublicKey(stm.contact.publicKey), textMessage)
             }
         }
     }
@@ -84,6 +93,8 @@ class WebSocketService : Service() {
     }
 
     override fun onCreate() {
+        broadcaster = LocalBroadcastManager.getInstance(this)
+
         thread = HandlerThread("WebSocketService",
                 Process.THREAD_PRIORITY_BACKGROUND)
         thread!!.start()
@@ -107,15 +118,26 @@ class WebSocketService : Service() {
     }
 
     fun sendMessage(contact: Contact, msg: String) {
-        client!!.sendDataMessage(loadPublicKey(contact.publicKey), TextMessage(msg, clientKeys!!.publicKey))
+        val msgObj = mServiceHandler.obtainMessage()
+        msgObj.obj = SendTextMessage(msg, contact)
+        mServiceHandler.sendMessage(msgObj)
+    }
+
+    fun notifyUi(publicKey : String) {
+        val intent = Intent(WebSocketServiceConstants.MESSAGE_RECEIVED)
+        intent.putExtra(WebSocketServiceConstants.CONTACT, publicKey)
+        broadcaster!!.sendBroadcast(intent)
     }
 
     private inner class MessageListener : ClientMessageListener {
         override fun handleDataMessage(msg: AbstractDataMessage) {
             if (msg is TextMessage) {
-                if (dbHelper.contactExistsForPublicKey(RsaKeyToStringConverter.encodePublicKey(msg.senderPublicKey))) {
+                val publicKey = RsaKeyToStringConverter.encodePublicKey(msg.senderPublicKey)
+                if (dbHelper.contactExistsForPublicKey(publicKey)) {
                     dbHelper.insertMessage(msg)
                     // TODO: Refresh display
+
+                    notifyUi(publicKey)
                     Toast.makeText(this@WebSocketService, "Message received.", Toast.LENGTH_SHORT).show()
                 } else {
                     // TODO: Ask user if we should create an anonymous contact and request profile?
@@ -127,5 +149,6 @@ class WebSocketService : Service() {
         }
     }
 
+    private inner class SendTextMessage(val msg: String, val contact: Contact)
 }
 

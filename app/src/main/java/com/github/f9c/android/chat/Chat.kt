@@ -1,20 +1,18 @@
 package com.github.f9c.android.chat
 
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
 import android.os.Bundle
 import android.os.IBinder
+import android.support.v4.content.LocalBroadcastManager
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.inputmethod.InputMethodManager
-import android.widget.Toast
 import com.github.f9c.android.contacts.Contact
 import com.github.f9c.android.util.DbHelper
 import com.github.f9c.android.R
 import com.github.f9c.android.websocket.WebSocketService
+import com.github.f9c.android.websocket.WebSocketServiceConstants
 import kotlinx.android.synthetic.main.chat.*
 
 class Chat : AppCompatActivity() {
@@ -23,6 +21,7 @@ class Chat : AppCompatActivity() {
     private var dbHelper: DbHelper = DbHelper(this)
     private var messagesAdapter: MessagesAdapter? = null
     private var recyclerView: RecyclerView? = null
+    private var broadcastReceiver: BroadcastReceiver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +57,8 @@ class Chat : AppCompatActivity() {
                 imm.hideSoftInputFromWindow(view.windowToken, 0)
             }
         }
+
+        broadcastReceiver = Receiver()
     }
 
     private fun refreshMessages() {
@@ -77,9 +78,21 @@ class Chat : AppCompatActivity() {
     override fun onStart() {
         val mIntent = Intent(this, WebSocketService::class.java)
         bindService(mIntent, mConnection, Context.BIND_AUTO_CREATE)
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver!!,
+                IntentFilter(WebSocketServiceConstants.MESSAGE_RECEIVED))
+
         super.onStart()
     }
 
+    private inner class Receiver : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent!!.extras[WebSocketServiceConstants.CONTACT] == contact!!.publicKey) {
+                refreshMessages();
+            }
+        }
+
+    }
 
     private val mConnection = object : ServiceConnection {
 
