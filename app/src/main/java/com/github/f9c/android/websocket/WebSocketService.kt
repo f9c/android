@@ -66,7 +66,7 @@ class WebSocketService : Service() {
 
                 val clientMessageListener = MessageListener();
                 // TODO: get server data from configuration
-                client = Client("195.201.46.160", 444, clientKeys, clientMessageListener);
+                client = Client("195.201.46.160", 8443, clientKeys, clientMessageListener);
             } else if (msg.obj is SendTextMessage) {
                 val stm = msg.obj as SendTextMessage
                 val textMessage = TextMessage(stm.msg, clientKeys!!.publicKey)

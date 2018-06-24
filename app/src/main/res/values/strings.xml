@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">f9c</string>
     <string name="action_settings">Settings</string>
+    <string name="server">Server</string>
+    <string name="alias">Profile Name</string>
+    <string name="profileImage">Profile Image</string>
+    <string name="selectImage">Select</string>
 </resources>

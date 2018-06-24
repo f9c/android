@@ -27,6 +27,7 @@ import com.github.f9c.android.R
 import com.github.f9c.android.util.RsaKeyToStringConverter.encodePublicKey
 import com.github.f9c.android.websocket.WebSocketService
 import com.github.f9c.android.chat.Chat
+import com.github.f9c.android.settings.Settings
 import java.net.URLEncoder
 import java.security.spec.InvalidKeySpecException
 import java.security.spec.PKCS8EncodedKeySpec
@@ -36,6 +37,7 @@ class Contacts : AppCompatActivity() {
 
     private val DEFAULT_SERVER = "f9c.eu"
 
+    private val SERVER = "SERVER"
     private val PUBLIC_KEY = "PUBLIC_KEY"
     private val PRIVATE_KEY = "PRIVATE_KEY"
 
@@ -69,7 +71,7 @@ class Contacts : AppCompatActivity() {
         if (publicKeyString == null || privateKeyString == null) {
             keyPair = createKeyPair()
             saveKeyPair(preferences, keyPair!!)
-            // TODO: show settings dialog
+            this@Contacts.startActivity(Intent(this@Contacts, Settings::class.java))
         } else {
             keyPair = loadKeyPair(publicKeyString, privateKeyString)
         }
@@ -77,12 +79,12 @@ class Contacts : AppCompatActivity() {
         fab.setOnClickListener { _ ->
             val i = Intent(Intent.ACTION_SEND)
             i.type = "text/html"
-            var alias = "nickname" // TODO: make configurable
-            // TODO: Include server name
+            var alias = preferences.getString("alias", "anonymous")
+            var server = preferences.getString("server", "")
             // TODO: Include expiry date
             i.putExtra(Intent.EXTRA_SUBJECT, "f9c contact information from '$alias'")
             val encodedKey = URLEncoder.encode(encodePublicKey(keyPair!!.public), "utf-8")
-            i.putExtra(Intent.EXTRA_TEXT, "https://$DEFAULT_SERVER?$ALIAS=$alias&$PUBLIC_KEY=$encodedKey")
+            i.putExtra(Intent.EXTRA_TEXT, "https://$DEFAULT_SERVER?$ALIAS=$alias&$PUBLIC_KEY=$encodedKey&$SERVER=$server")
 
             try {
                 startActivity(Intent.createChooser(i, "Send public key link..."))
@@ -145,6 +147,7 @@ class Contacts : AppCompatActivity() {
 
         val alias = openUri.getQueryParameter(ALIAS)
         val publicKey = openUri.getQueryParameter(PUBLIC_KEY)
+        val server = openUri.getQueryParameter(SERVER)
 
         if (alias.isNullOrBlank()) {
             Toast.makeText(this@Contacts, "Unable to add contact: Alias is missing.", Toast.LENGTH_SHORT).show()
@@ -171,7 +174,7 @@ class Contacts : AppCompatActivity() {
             return
         }
 
-        dbHelper.insertContact(alias, publicKey)
+        dbHelper.insertContact(alias, server, publicKey)
 
         refreshContactList()
     }
@@ -229,7 +232,10 @@ class Contacts : AppCompatActivity() {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
-            R.id.action_settings -> true
+            R.id.action_settings -> {
+                this@Contacts.startActivity(Intent(this@Contacts, Settings::class.java))
+                return true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }

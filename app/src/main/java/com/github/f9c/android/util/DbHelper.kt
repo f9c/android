@@ -12,15 +12,17 @@ import com.github.f9c.android.contacts.Contact
 import com.github.f9c.client.datamessage.TextMessage
 
 
-class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 1) {
+class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 2) {
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL("CREATE TABLE CONTACTS (publicKey TEXT primary key, alias TEXT unique, profileIcon BLOB)")
+        db.execSQL("CREATE TABLE CONTACTS (publicKey TEXT primary key, alias TEXT unique, server TEXT, profileIcon BLOB)")
         db.execSQL("CREATE TABLE MESSAGES (contactRowId INTEGER, sendDate INT, receiveDate INT, message TEXT, read INTEGER, incoming INTEGER)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE CONTACTS add server TEXT")
+        }
     }
 
     fun contactExistsForAlias(alias: String): Boolean {
@@ -39,9 +41,10 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 1) {
         }
     }
 
-    fun insertContact(alias: String, publicKey: String) {
+    fun insertContact(alias: String, server: String, publicKey: String) {
         val contentValues = ContentValues()
         contentValues.put("alias", alias)
+        contentValues.put("server", server)
         contentValues.put("publicKey", publicKey)
         writableDatabase.insert("CONTACTS", null, contentValues)
     }
