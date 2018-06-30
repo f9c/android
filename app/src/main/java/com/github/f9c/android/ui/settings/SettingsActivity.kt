@@ -1,25 +1,28 @@
-package com.github.f9c.android.settings
+package com.github.f9c.android.ui.settings
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import com.github.f9c.android.R
-import android.content.Intent
 import android.widget.ImageButton
 import android.graphics.BitmapFactory
 import android.app.Activity
-import android.content.Context
+import android.content.*
 import android.widget.ImageView
 import android.graphics.Bitmap
-import android.content.ContextWrapper
+import android.os.IBinder
 import android.preference.PreferenceManager
 import android.widget.EditText
 import android.widget.TextView
+import com.github.f9c.android.profile.Profile
+import com.github.f9c.android.websocket.WebSocketService
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.max
 
 
-class Settings : AppCompatActivity() {
+class SettingsActivity : AppCompatActivity() {
+
+    private var webSocketService: WebSocketService? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +37,7 @@ class Settings : AppCompatActivity() {
                 preferences.getString("alias", "anonymous"), TextView.BufferType.EDITABLE)
 
 
-        val profileImageFile = profileImageFile()
+        val profileImageFile = Profile(applicationContext).profileImageFile()
         if (profileImageFile.exists()) {
             val profileImage = BitmapFactory.decodeFile(profileImageFile.absolutePath)
             findViewById<ImageView>(R.id.settings_profileImgView).setImageBitmap(profileImage)
@@ -55,6 +58,8 @@ class Settings : AppCompatActivity() {
 
             editor.commit()
             finish()
+
+            webSocketService!!.openConnection()
         }
 
     }
@@ -72,7 +77,7 @@ class Settings : AppCompatActivity() {
 
                 val croppedBmp = Bitmap.createBitmap(resized, 0, 0, 200, 200)
 
-                val profileIconFile = profileImageFile()
+                val profileIconFile = Profile(applicationContext).profileImageFile()
 
                 FileOutputStream(profileIconFile).use {
                     croppedBmp.compress(Bitmap.CompressFormat.PNG, 100, it)
@@ -83,10 +88,33 @@ class Settings : AppCompatActivity() {
         }
     }
 
-    private fun profileImageFile(): File {
-        val cw = ContextWrapper(applicationContext)
-        val directory = cw.getDir("imageDir", Context.MODE_PRIVATE)
-        return File(directory, "profile.jpg")
+
+
+    override fun onStart() {
+        val mIntent = Intent(this, WebSocketService::class.java)
+        bindService(mIntent, mConnection, Context.BIND_AUTO_CREATE)
+        super.onStart()
     }
 
+    override fun onDestroy() {
+        unbindService(mConnection)
+        super.onDestroy()
+    }
+
+    val mConnection = object : ServiceConnection {
+
+        override fun onBindingDied(name: ComponentName?) {
+
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            webSocketService = null
+        }
+
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val mLocalBinder = service as WebSocketService.LocalBinder
+            webSocketService = mLocalBinder.getServerInstance()
+        }
+
+    }
 }

@@ -3,8 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".ui.contacts.ContactsActivity">
     <item
-        android:id="@+id/action_settings"
+        android:id="@+id/menu_contact_remove"
         android:orderInCategory="100"
-        android:title="@string/action_settings"
+        android:title="@string/remove_contact"
         app:showAsAction="never" />
 </menu>

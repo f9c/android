@@ -7,8 +7,8 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import com.github.f9c.android.chat.Message
-import com.github.f9c.android.contacts.Contact
+import com.github.f9c.android.message.Message
+import com.github.f9c.android.contact.Contact
 import com.github.f9c.client.datamessage.TextMessage
 
 
@@ -47,6 +47,15 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 2) {
         contentValues.put("server", server)
         contentValues.put("publicKey", publicKey)
         writableDatabase.insert("CONTACTS", null, contentValues)
+    }
+
+    fun updateContact(publicKey: String, alias: String, statusText: String?, profileImage: ByteArray?) {
+        val contentValues = ContentValues()
+        contentValues.put("alias", alias)
+        contentValues.put("profileIcon", profileImage)
+        // TODO: insert status text
+        writableDatabase.update("CONTACTS", contentValues, "publicKey = ?", arrayOf(publicKey))
+
     }
 
     fun loadContacts(): MutableList<Contact> {
@@ -111,6 +120,11 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 2) {
         }
     }
 
+    fun removeContact(contact: Contact) {
+        writableDatabase.delete("MESSAGES", "contactRowId = ?", arrayOf(contact.rowId.toString()))
+        writableDatabase.delete("CONTACTS", "rowId = ?", arrayOf(contact.rowId.toString()))
+    }
+
     private fun contactFromRow(c: Cursor) =
             Contact(c.getInt(0), c.getString(1), c.getString(2), toImage(c.getBlob(3)))
 
@@ -126,6 +140,7 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 2) {
         c.close()
         return result
     }
+
 
 
 }

@@ -1,4 +1,4 @@
-package com.github.f9c.android.chat
+package com.github.f9c.android.ui.chat
 
 import android.support.constraint.ConstraintLayout
 import android.support.v7.widget.RecyclerView
@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
 import com.github.f9c.android.R
+import com.github.f9c.android.message.Message
 
 class MessagesAdapter(private var _messages: MutableList<Message>) : RecyclerView.Adapter<MessagesAdapter.ViewHolder>() {
 

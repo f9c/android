@@ -1,5 +1,7 @@
-package com.github.f9c.android.contacts
+package com.github.f9c.android.ui.contacts
 
+import android.app.Activity
+import android.app.AlertDialog
 import android.content.*
 import android.os.Bundle
 import android.os.IBinder
@@ -19,21 +21,19 @@ import android.widget.Toast
 import android.support.v4.view.GestureDetectorCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import com.github.f9c.android.util.DbHelper
 import com.github.f9c.android.R
 import com.github.f9c.android.util.RsaKeyToStringConverter.encodePublicKey
 import com.github.f9c.android.websocket.WebSocketService
-import com.github.f9c.android.chat.Chat
-import com.github.f9c.android.settings.Settings
+import com.github.f9c.android.ui.chat.ChatActivity
+import com.github.f9c.android.ui.settings.SettingsActivity
 import java.net.URLEncoder
-import java.security.spec.InvalidKeySpecException
 import java.security.spec.PKCS8EncodedKeySpec
 
 
-class Contacts : AppCompatActivity() {
+class ContactsActivity : AppCompatActivity() {
 
     private val DEFAULT_SERVER = "f9c.eu"
 
@@ -71,7 +71,7 @@ class Contacts : AppCompatActivity() {
         if (publicKeyString == null || privateKeyString == null) {
             keyPair = createKeyPair()
             saveKeyPair(preferences, keyPair!!)
-            this@Contacts.startActivity(Intent(this@Contacts, Settings::class.java))
+            this@ContactsActivity.startActivity(Intent(this@ContactsActivity, SettingsActivity::class.java))
         } else {
             keyPair = loadKeyPair(publicKeyString, privateKeyString)
         }
@@ -89,39 +89,37 @@ class Contacts : AppCompatActivity() {
             try {
                 startActivity(Intent.createChooser(i, "Send public key link..."))
             } catch (ex: android.content.ActivityNotFoundException) {
-                Toast.makeText(this@Contacts, "There are no apps installed that support this action.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@ContactsActivity, "There are no apps installed that support this action.", Toast.LENGTH_LONG).show()
             }
         }
 
         recyclerView = findViewById<RecyclerView>(R.id.contactlist).apply {
             setHasFixedSize(true)
 
-            layoutManager = LinearLayoutManager(this@Contacts)
+            layoutManager = LinearLayoutManager(this@ContactsActivity)
 
             contactAdapter = ContactsAdapter(arrayListOf())
             adapter = contactAdapter
         }
 
+        registerForContextMenu(recyclerView)
+
         val contactListener = object : GestureDetector.SimpleOnGestureListener() {
             override fun onSingleTapUp(e: MotionEvent): Boolean {
-                val view = recyclerView?.findChildViewUnder(e.x, e.getY())
+                val view = recyclerView?.findChildViewUnder(e.x, e.y)
                 val position = recyclerView?.getChildLayoutPosition(view)
-                val contact = contactAdapter!!.contacts[position!!]
-
-                val openChatIntent = Intent(this@Contacts, Chat::class.java)
-                openChatIntent.putExtra("contact", contact.rowId.toString())
-                this@Contacts.startActivity(openChatIntent)
-
+                if (position!! > -1) {
+                    val contact = contactAdapter!!.contacts[position!!]
+                    val openChatIntent = Intent(this@ContactsActivity, ChatActivity::class.java)
+                    openChatIntent.putExtra("contact", contact.rowId.toString())
+                    this@ContactsActivity.startActivity(openChatIntent)
+                }
                 return super.onSingleTapUp(e)
             }
 
-            override fun onLongPress(e: MotionEvent?) {
-                // TODO: implement
-                super.onLongPress(e)
-            }
         }
 
-        val detector = GestureDetectorCompat(this@Contacts, contactListener);
+        val detector = GestureDetectorCompat(this@ContactsActivity, contactListener);
 
 
         recyclerView?.addOnItemTouchListener(object : RecyclerView.OnItemTouchListener {
@@ -140,60 +138,32 @@ class Contacts : AppCompatActivity() {
         startService(serviceIntent)
     }
 
+    override fun onContextItemSelected(item: MenuItem): Boolean {
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        val openUri = intent.data
+        if (item.itemId == R.id.menu_contact_remove) {
+            val contact = contactAdapter!!.contacts[contactAdapter!!.position]
 
-        val alias = openUri.getQueryParameter(ALIAS)
-        val publicKey = openUri.getQueryParameter(PUBLIC_KEY)
-        val server = openUri.getQueryParameter(SERVER)
-
-        if (alias.isNullOrBlank()) {
-            Toast.makeText(this@Contacts, "Unable to add contact: Alias is missing.", Toast.LENGTH_SHORT).show()
-            // TODO: allow user to use a different alias
+            AlertDialog.Builder(this).setTitle(getText(R.string.remove_contact).toString()  + contact.alias)
+                    .setMessage(getString(R.string.confirm_remove_contact, contact.alias))
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .setPositiveButton(android.R.string.yes) { dialog, whichButton ->
+                        dbHelper.removeContact(contact)
+                        refreshContactList()
+                        Toast.makeText(this@ContactsActivity, getString(R.string.contact_removed), Toast.LENGTH_SHORT).show()
+                    }.setNegativeButton(android.R.string.no, null).show()
         }
+        return super.onContextItemSelected(item)
+    }
 
-        if (publicKey.isNullOrBlank()) {
-            Toast.makeText(this@Contacts, "Unable to add contact: Public key is missing.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (!isPublicKeyValid(publicKey)) {
-            Toast.makeText(this@Contacts, "Unable to add contact: Public key for contact is invalid.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        if (dbHelper.contactExistsForPublicKey(publicKey)) {
-            Toast.makeText(this@Contacts, "Unable to add contact: This public key already exists.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        if (dbHelper.contactExistsForAlias(alias)) {
-            Toast.makeText(this@Contacts, "Unable to add contact: Alias '$alias' already exists.", Toast.LENGTH_SHORT).show()
-            // TODO: allow user to use a different alias
-            return
-        }
-
-        dbHelper.insertContact(alias, server, publicKey)
-
+    override fun onNavigateUpFromChild(child: Activity?): Boolean {
         refreshContactList()
+        return super.onNavigateUpFromChild(child)
     }
 
     private fun refreshContactList() {
         contactAdapter?.contacts = dbHelper.loadContacts()
     }
 
-    private fun isPublicKeyValid(publicKeyString: String): Boolean {
-        try {
-            val publicKeyBytes = Base64.decode(publicKeyString, Base64.NO_WRAP)
-            val keyFactory = KeyFactory.getInstance("RSA")
-            keyFactory.generatePublic(X509EncodedKeySpec(publicKeyBytes))
-            return true
-        } catch (e: InvalidKeySpecException) {
-            Log.e("Contact", "Invalid public key", e)
-        }
-        return false
-    }
 
     private fun loadKeyPair(publicKeyString: String?, privateKeyString: String?): KeyPair? {
         val publicKey = Base64.decode(publicKeyString, Base64.NO_WRAP)
@@ -233,7 +203,7 @@ class Contacts : AppCompatActivity() {
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
             R.id.action_settings -> {
-                this@Contacts.startActivity(Intent(this@Contacts, Settings::class.java))
+                this@ContactsActivity.startActivity(Intent(this@ContactsActivity, SettingsActivity::class.java))
                 return true
             }
             else -> super.onOptionsItemSelected(item)
@@ -268,6 +238,7 @@ class Contacts : AppCompatActivity() {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val mLocalBinder = service as WebSocketService.LocalBinder
             webSocketService = mLocalBinder.getServerInstance()
+            webSocketService!!.openConnection()
         }
 
     }

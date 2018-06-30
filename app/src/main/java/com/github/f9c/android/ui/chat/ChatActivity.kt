@@ -1,4 +1,4 @@
-package com.github.f9c.android.chat
+package com.github.f9c.android.ui.chat
 
 import android.content.*
 import android.os.Bundle
@@ -8,14 +8,15 @@ import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.inputmethod.InputMethodManager
-import com.github.f9c.android.contacts.Contact
+import com.github.f9c.android.contact.Contact
 import com.github.f9c.android.util.DbHelper
 import com.github.f9c.android.R
+
 import com.github.f9c.android.websocket.WebSocketService
 import com.github.f9c.android.websocket.WebSocketServiceConstants
 import kotlinx.android.synthetic.main.chat.*
 
-class Chat : AppCompatActivity() {
+class ChatActivity : AppCompatActivity() {
     private var webSocketService: WebSocketService? = null
     private var contact: Contact? = null
     private var dbHelper: DbHelper = DbHelper(this)
@@ -36,7 +37,7 @@ class Chat : AppCompatActivity() {
         recyclerView = findViewById<RecyclerView>(R.id.chatHistory).apply {
             setHasFixedSize(true)
 
-            layoutManager = LinearLayoutManager(this@Chat)
+            layoutManager = LinearLayoutManager(this@ChatActivity)
             messagesAdapter = MessagesAdapter(dbHelper.loadMessages(contact!!.rowId))
             adapter = messagesAdapter
 

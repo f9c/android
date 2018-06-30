@@ -1,4 +1,4 @@
-package com.github.f9c.android.contacts
+package com.github.f9c.android.contact
 
 import android.graphics.Bitmap
 
