@@ -1,13 +1,10 @@
 package com.github.f9c.android.websocket
 
 import android.app.Service
-import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.os.*
 import android.preference.PreferenceManager
 import android.support.v4.content.LocalBroadcastManager
-import android.util.Base64
 import android.util.Log
 import android.widget.Toast
 import com.github.f9c.Client
@@ -15,6 +12,7 @@ import com.github.f9c.android.util.DbHelper
 import com.github.f9c.android.util.RsaKeyToStringConverter
 import com.github.f9c.android.contact.Contact
 import com.github.f9c.android.profile.Profile
+import com.github.f9c.android.util.Base64
 import com.github.f9c.client.ClientKeys
 import com.github.f9c.client.ClientMessageListener
 import com.github.f9c.client.datamessage.AbstractDataMessage
@@ -22,8 +20,6 @@ import com.github.f9c.client.datamessage.ProfileDataMessage
 import com.github.f9c.client.datamessage.RequestProfileMessage
 import com.github.f9c.client.datamessage.TextMessage
 import com.neovisionaries.ws.client.WebSocketException
-import java.io.File
-import java.io.RandomAccessFile
 import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.PublicKey
@@ -31,8 +27,8 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 
 object WebSocketServiceConstants {
-    public val MESSAGE_RECEIVED = "CHAT_MESSAGE_RECEIVED"
-    public val CONTACT = "CONTACT"
+    val MESSAGE_RECEIVED = "CHAT_MESSAGE_RECEIVED"
+    val CONTACT = "CONTACT"
 }
 
 class WebSocketService : Service() {
@@ -53,6 +49,7 @@ class WebSocketService : Service() {
     private val dbHelper: DbHelper = DbHelper(this)
     private var thread: HandlerThread? = null
     private var broadcaster: LocalBroadcastManager? = null
+    private var server: String? = null
 
     inner class LocalBinder : Binder() {
 
@@ -80,7 +77,7 @@ class WebSocketService : Service() {
                 clientKeys = ClientKeys(keyPair.public, keyPair.private)
 
                 val clientMessageListener = MessageListener()
-                val server = preferences.getString(SERVER, "")
+                server = preferences.getString(SERVER, "")
                 if ("" != server) {
                     try {
                         client = Client(server, 443, clientKeys, clientMessageListener)
@@ -93,7 +90,7 @@ class WebSocketService : Service() {
                 }
             } else if (msg.obj is SendTextMessage) {
                 val stm = msg.obj as SendTextMessage
-                val textMessage = TextMessage(stm.msg, clientKeys!!.publicKey)
+                val textMessage = TextMessage(stm.msg, clientKeys!!.publicKey, server)
                 client!!.sendDataMessage(loadPublicKey(stm.contact.publicKey), textMessage)
             } else if (msg.obj is SendMessage) {
                 val sendMessage = msg.obj as SendMessage
@@ -103,9 +100,9 @@ class WebSocketService : Service() {
     }
 
     // TODO: Duplicated from ContactsActivity. Remove one.
-    private fun loadKeyPair(publicKeyString: String?, privateKeyString: String?): KeyPair {
-        val publicKey = Base64.decode(publicKeyString, Base64.NO_WRAP)
-        val privateKey = Base64.decode(privateKeyString, Base64.NO_WRAP)
+    private fun loadKeyPair(publicKeyString: String, privateKeyString: String): KeyPair {
+        val publicKey = Base64.decode(publicKeyString)
+        val privateKey = Base64.decode(privateKeyString)
         val keyFactory = KeyFactory.getInstance("RSA")
 
         return KeyPair(keyFactory.generatePublic(X509EncodedKeySpec(publicKey)),
@@ -113,7 +110,7 @@ class WebSocketService : Service() {
     }
 
     private fun loadPublicKey(publicKeyString: String): PublicKey {
-        val publicKey = Base64.decode(publicKeyString, Base64.NO_WRAP)
+        val publicKey = com.github.f9c.android.util.Base64.decode(publicKeyString)
         val keyFactory = KeyFactory.getInstance("RSA")
 
         return keyFactory.generatePublic(X509EncodedKeySpec(publicKey))

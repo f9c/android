@@ -5,9 +5,9 @@ import android.support.v7.app.AppCompatActivity
 import com.github.f9c.android.R
 import android.content.*
 import android.os.IBinder
-import android.util.Base64
 import android.util.Log
 import android.widget.*
+import com.github.f9c.android.util.Base64
 import com.github.f9c.android.util.DbHelper
 import com.github.f9c.android.websocket.WebSocketService
 import java.security.KeyFactory
@@ -16,8 +16,8 @@ import java.security.spec.X509EncodedKeySpec
 
 
 class AddContactActivity : AppCompatActivity() {
-    private val SERVER = "SERVER"
-    private val PUBLIC_KEY = "PUBLIC_KEY"
+    private val SERVER = "server"
+    private val PUBLIC_KEY = "publicKey"
     private val ALIAS = "alias"
 
     private var webSocketService: WebSocketService? = null
@@ -78,7 +78,7 @@ class AddContactActivity : AppCompatActivity() {
 
     private fun isPublicKeyValid(publicKeyString: String): Boolean {
         try {
-            val publicKeyBytes = Base64.decode(publicKeyString, Base64.NO_WRAP)
+            val publicKeyBytes = Base64.decode(publicKeyString)
             val keyFactory = KeyFactory.getInstance("RSA")
             keyFactory.generatePublic(X509EncodedKeySpec(publicKeyBytes))
             return true

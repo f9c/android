@@ -35,12 +35,9 @@ class ChatActivity : AppCompatActivity() {
         chatToolbar.title = contact!!.alias
 
         recyclerView = findViewById<RecyclerView>(R.id.chatHistory).apply {
-            setHasFixedSize(true)
-
             layoutManager = LinearLayoutManager(this@ChatActivity)
             messagesAdapter = MessagesAdapter(dbHelper.loadMessages(contact!!.rowId))
             adapter = messagesAdapter
-
         }
         scrollToEnd()
 

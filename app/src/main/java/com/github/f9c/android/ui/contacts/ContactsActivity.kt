@@ -13,7 +13,6 @@ import kotlinx.android.synthetic.main.contacts.*
 import java.security.KeyPairGenerator
 import java.security.SecureRandom
 import android.preference.PreferenceManager
-import android.util.Base64
 import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.spec.X509EncodedKeySpec
@@ -29,6 +28,7 @@ import com.github.f9c.android.util.RsaKeyToStringConverter.encodePublicKey
 import com.github.f9c.android.websocket.WebSocketService
 import com.github.f9c.android.ui.chat.ChatActivity
 import com.github.f9c.android.ui.settings.SettingsActivity
+import com.github.f9c.android.util.Base64
 import java.net.URLEncoder
 import java.security.spec.PKCS8EncodedKeySpec
 
@@ -143,7 +143,7 @@ class ContactsActivity : AppCompatActivity() {
         if (item.itemId == R.id.menu_contact_remove) {
             val contact = contactAdapter!!.contacts[contactAdapter!!.position]
 
-            AlertDialog.Builder(this).setTitle(getText(R.string.remove_contact).toString()  + contact.alias)
+            AlertDialog.Builder(this).setTitle(getText(R.string.remove_contact).toString() + " " + contact.alias)
                     .setMessage(getString(R.string.confirm_remove_contact, contact.alias))
                     .setIcon(android.R.drawable.ic_dialog_alert)
                     .setPositiveButton(android.R.string.yes) { dialog, whichButton ->
@@ -165,9 +165,9 @@ class ContactsActivity : AppCompatActivity() {
     }
 
 
-    private fun loadKeyPair(publicKeyString: String?, privateKeyString: String?): KeyPair? {
-        val publicKey = Base64.decode(publicKeyString, Base64.NO_WRAP)
-        val privateKey = Base64.decode(privateKeyString, Base64.NO_WRAP)
+    private fun loadKeyPair(publicKeyString: String, privateKeyString: String): KeyPair? {
+        val publicKey = Base64.decode(publicKeyString)
+        val privateKey = Base64.decode(privateKeyString)
         val keyFactory = KeyFactory.getInstance("RSA")
 
         return KeyPair(keyFactory.generatePublic(X509EncodedKeySpec(publicKey)),
@@ -177,7 +177,7 @@ class ContactsActivity : AppCompatActivity() {
     private fun saveKeyPair(preferences: SharedPreferences, keyPair: KeyPair) {
         val editor = preferences.edit()
         val publicKey = encodePublicKey(keyPair.public)
-        val privateKey = Base64.encodeToString(keyPair.private.encoded, Base64.NO_WRAP)
+        val privateKey = Base64.encode(keyPair.private.encoded)
         editor.putString(PUBLIC_KEY, publicKey)
         editor.putString(PRIVATE_KEY, privateKey)
         editor.commit()
