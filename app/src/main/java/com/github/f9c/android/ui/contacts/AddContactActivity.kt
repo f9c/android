@@ -13,6 +13,9 @@ import com.github.f9c.android.websocket.WebSocketService
 import java.security.KeyFactory
 import java.security.spec.InvalidKeySpecException
 import java.security.spec.X509EncodedKeySpec
+import android.content.Intent
+
+
 
 
 class AddContactActivity : AppCompatActivity() {
@@ -21,10 +24,10 @@ class AddContactActivity : AppCompatActivity() {
     private val ALIAS = "alias"
 
     private var webSocketService: WebSocketService? = null
+    private var webSocketBound: Boolean = false
 
     private val dbHelper: DbHelper = DbHelper(this)
 
-    private val publicKey : String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,23 +45,23 @@ class AddContactActivity : AppCompatActivity() {
 
         if (server.isNullOrBlank()) {
             Toast.makeText(this@AddContactActivity, "Unable to add contact: Server is missing.", Toast.LENGTH_LONG).show()
-            finish()
+            finishAndReturnToHome()
             return
         }
         if (publicKey.isNullOrBlank()) {
             Toast.makeText(this@AddContactActivity, "Unable to add contact: Public key is missing.", Toast.LENGTH_LONG).show()
-            finish()
+            finishAndReturnToHome()
             return
         }
         if (!isPublicKeyValid(publicKey)) {
             Toast.makeText(this@AddContactActivity, "Unable to add contact: Public key for contact is invalid.", Toast.LENGTH_LONG).show()
-            finish()
+            finishAndReturnToHome()
             return
         }
 
         if (dbHelper.contactExistsForPublicKey(publicKey)) {
             Toast.makeText(this@AddContactActivity, "Unable to add contact: This public key already exists.", Toast.LENGTH_LONG).show()
-            finish()
+            finishAndReturnToHome()
             return
         }
 
@@ -70,10 +73,18 @@ class AddContactActivity : AppCompatActivity() {
             } else {
                 dbHelper.insertContact(alias, server, publicKey)
                 webSocketService!!.requestProfileData(server, publicKey)
-                finish()
+
+                finishAndReturnToHome()
             }
         }
 
+    }
+
+    private fun finishAndReturnToHome() {
+        val intent = Intent(this, ContactsActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_TASK_ON_HOME
+        startActivity(intent)
+        this.finish()
     }
 
     private fun isPublicKeyValid(publicKeyString: String): Boolean {
@@ -91,11 +102,17 @@ class AddContactActivity : AppCompatActivity() {
     override fun onStart() {
         val mIntent = Intent(this, WebSocketService::class.java)
         bindService(mIntent, mConnection, Context.BIND_AUTO_CREATE)
+        webSocketBound = true
+
         super.onStart()
     }
 
+
+
     override fun onDestroy() {
-        unbindService(mConnection)
+        if (webSocketBound) {
+            unbindService(mConnection)
+        }
         super.onDestroy()
     }
 

@@ -31,7 +31,7 @@ class SettingsActivity : AppCompatActivity() {
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
 
         findViewById<EditText>(R.id.settings_server).setText(
-                preferences.getString("server", ""), TextView.BufferType.EDITABLE)
+                preferences.getString("server", "develop.f9c.eu"), TextView.BufferType.EDITABLE)
 
         findViewById<EditText>(R.id.settings_alias).setText(
                 preferences.getString("alias", "anonymous"), TextView.BufferType.EDITABLE)

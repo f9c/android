@@ -14,7 +14,7 @@
         <activity
             android:name="com.github.f9c.android.ui.contacts.ContactsActivity"
             android:label="@string/app_name"
-            android:launchMode="singleTop"
+            android:launchMode="singleInstance"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action

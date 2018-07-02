@@ -2,12 +2,11 @@ package com.github.f9c.android.ui.contacts
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.TaskStackBuilder
 import android.content.*
 import android.os.Bundle
 import android.os.IBinder
 import android.support.v7.app.AppCompatActivity
-import android.view.Menu
-import android.view.MenuItem
 
 import kotlinx.android.synthetic.main.contacts.*
 import java.security.KeyPairGenerator
@@ -20,8 +19,7 @@ import android.widget.Toast
 import android.support.v4.view.GestureDetectorCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.view.GestureDetector
-import android.view.MotionEvent
+import android.view.*
 import com.github.f9c.android.util.DbHelper
 import com.github.f9c.android.R
 import com.github.f9c.android.util.RsaKeyToStringConverter.encodePublicKey
@@ -29,19 +27,15 @@ import com.github.f9c.android.websocket.WebSocketService
 import com.github.f9c.android.ui.chat.ChatActivity
 import com.github.f9c.android.ui.settings.SettingsActivity
 import com.github.f9c.android.util.Base64
+import com.github.f9c.client.ClientUrl
 import java.net.URLEncoder
 import java.security.spec.PKCS8EncodedKeySpec
 
 
 class ContactsActivity : AppCompatActivity() {
 
-    private val DEFAULT_SERVER = "f9c.eu"
-
-    private val SERVER = "SERVER"
     private val PUBLIC_KEY = "PUBLIC_KEY"
     private val PRIVATE_KEY = "PRIVATE_KEY"
-
-    private val ALIAS = "alias"
 
     private var keyPair: KeyPair? = null
 
@@ -84,7 +78,7 @@ class ContactsActivity : AppCompatActivity() {
             // TODO: Include expiry date
             i.putExtra(Intent.EXTRA_SUBJECT, "f9c contact information from '$alias'")
             val encodedKey = URLEncoder.encode(encodePublicKey(keyPair!!.public), "utf-8")
-            i.putExtra(Intent.EXTRA_TEXT, "https://$DEFAULT_SERVER?$ALIAS=$alias&$PUBLIC_KEY=$encodedKey&$SERVER=$server")
+            i.putExtra(Intent.EXTRA_TEXT, ClientUrl.createSharingUrl(alias, encodedKey, server))
 
             try {
                 startActivity(Intent.createChooser(i, "Send public key link..."))
@@ -154,6 +148,14 @@ class ContactsActivity : AppCompatActivity() {
         }
         return super.onContextItemSelected(item)
     }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        if (hasFocus) {
+            refreshContactList()
+        }
+        super.onWindowFocusChanged(hasFocus)
+    }
+
 
     override fun onNavigateUpFromChild(child: Activity?): Boolean {
         refreshContactList()
