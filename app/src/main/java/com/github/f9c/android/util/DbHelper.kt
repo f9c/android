@@ -60,7 +60,7 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 2) {
 
     fun loadContacts(): MutableList<Contact> {
 
-        val c = readableDatabase.rawQuery("SELECT rowId, publicKey, alias, profileIcon from CONTACTS order by alias", arrayOf())
+        val c = readableDatabase.rawQuery("SELECT rowId, publicKey, server, alias, profileIcon from CONTACTS order by alias", arrayOf())
 
         val result = mutableListOf<Contact>()
 
@@ -113,7 +113,7 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 2) {
     }
 
     fun loadContact(contactId: String): Contact {
-        val c = readableDatabase.rawQuery("SELECT rowId, publicKey, alias, profileIcon from CONTACTS where rowId = ?", arrayOf(contactId))
+        val c = readableDatabase.rawQuery("SELECT rowId, publicKey, server, alias, profileIcon from CONTACTS where rowId = ?", arrayOf(contactId))
         c.use { c ->
             c.moveToFirst()
             return contactFromRow(c)
@@ -126,7 +126,7 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 2) {
     }
 
     private fun contactFromRow(c: Cursor) =
-            Contact(c.getInt(0), c.getString(1), c.getString(2), toImage(c.getBlob(3)))
+            Contact(c.getInt(0), c.getString(1), c.getString(2), c.getString(3), toImage(c.getBlob(4)))
 
     fun loadMessages(contactId: Int): MutableList<Message> {
 

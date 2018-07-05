@@ -93,10 +93,10 @@ class WebSocketService : Service() {
             } else if (msg.obj is SendTextMessage) {
                 val stm = msg.obj as SendTextMessage
                 val textMessage = TextMessage(stm.msg, clientKeys!!.publicKey, server)
-                client!!.sendDataMessage(loadPublicKey(stm.contact.publicKey), textMessage)
+                client!!.sendDataMessage(loadPublicKey(stm.contact.publicKey), stm.contact.server, textMessage)
             } else if (msg.obj is SendMessage) {
                 val sendMessage = msg.obj as SendMessage
-                client!!.sendDataMessage(sendMessage.recipientPublicKey, sendMessage.msg)
+                client!!.sendDataMessage(sendMessage.recipientPublicKey, sendMessage.recipientServer, sendMessage.msg)
             }
         }
     }
@@ -159,15 +159,15 @@ class WebSocketService : Service() {
         // TODO: Fill status text
         val profile = Profile(applicationContext)
         val requestProfileMessage = RequestProfileMessage(loadPublicKey(profile.publicKey()), profile.server(), profile.alias(), "", ByteArrayInputStream(profile.profileImage()))
-        sendMessage(requestProfileMessage, server, loadPublicKey(publicKey))
+        sendMessage(requestProfileMessage, loadPublicKey(publicKey), server)
     }
 
-    private fun sendMessage(message: ClientMessage, server: String, publicKey: PublicKey) {
+    private fun sendMessage(message: ClientMessage, recipientPublicKey: PublicKey, recipientServer: String) {
         val msgObj = mServiceHandler.obtainMessage()
         msgObj.obj = SendMessage(
                 message,
-                server,
-                publicKey)
+                recipientPublicKey,
+                recipientServer)
         mServiceHandler.sendMessage(msgObj)
     }
 
@@ -188,7 +188,7 @@ class WebSocketService : Service() {
                 val profile = Profile(applicationContext)
                 //PublicKey sender, String senderServer, String alias, String statusText, InputStream profileImage
                 sendMessage(ProfileDataMessage(loadPublicKey(profile.publicKey()), profile.server(), profile.alias(), "", ByteArrayInputStream(profile.profileImage())),
-                        msg.header.senderServer, Crypt.decodeKey(msg.header.senderPublicKey))
+                        Crypt.decodeKey(msg.header.senderPublicKey), msg.header.senderServer)
             } else if (msg is ProfileDataMessage) {
                 if (dbHelper.contactExistsForPublicKey(publicKey)) {
                     dbHelper.updateContact(publicKey, msg.alias, msg.statusText, ByteArrayHelper.toByteArray(msg.profileImage))
@@ -206,6 +206,6 @@ class WebSocketService : Service() {
     }
 
     private inner class SendTextMessage(val msg: String, val contact: Contact)
-    private inner class SendMessage(val msg: ClientMessage, val server: String, val recipientPublicKey: PublicKey)
+    private inner class SendMessage(val msg: ClientMessage, val recipientPublicKey: PublicKey, val recipientServer: String)
 }
 
