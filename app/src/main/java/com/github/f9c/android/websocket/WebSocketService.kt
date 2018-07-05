@@ -8,18 +8,21 @@ import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
 import android.widget.Toast
 import com.github.f9c.Client
-import com.github.f9c.android.util.DbHelper
-import com.github.f9c.android.util.RsaKeyToStringConverter
 import com.github.f9c.android.contact.Contact
 import com.github.f9c.android.profile.Profile
 import com.github.f9c.android.util.Base64
+import com.github.f9c.android.util.ByteArrayHelper
+import com.github.f9c.android.util.DbHelper
+import com.github.f9c.android.util.RsaKeyToStringConverter
 import com.github.f9c.client.ClientKeys
 import com.github.f9c.client.ClientMessageListener
-import com.github.f9c.client.datamessage.AbstractDataMessage
-import com.github.f9c.client.datamessage.ProfileDataMessage
-import com.github.f9c.client.datamessage.RequestProfileMessage
+import com.github.f9c.client.datamessage.ClientMessage
 import com.github.f9c.client.datamessage.TextMessage
+import com.github.f9c.client.datamessage.multipart.ProfileDataMessage
+import com.github.f9c.client.datamessage.multipart.RequestProfileMessage
+import com.github.f9c.message.encryption.Crypt
 import com.neovisionaries.ws.client.WebSocketException
+import java.io.ByteArrayInputStream
 import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.PublicKey
@@ -34,7 +37,6 @@ object WebSocketServiceConstants {
 class WebSocketService : Service() {
 
     // TODO: Move to settings service
-    private val ALIAS = "alias"
     private val SERVER = "server"
     private val PUBLIC_KEY = "PUBLIC_KEY"
     private val PRIVATE_KEY = "PRIVATE_KEY"
@@ -154,18 +156,13 @@ class WebSocketService : Service() {
     }
 
     fun requestProfileData(server: String, publicKey: String) {
-        val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        val alias = preferences.getString(ALIAS, null)
-
         // TODO: Fill status text
         val profile = Profile(applicationContext)
-        val requestProfileMessage = RequestProfileMessage(alias, "",
-                profile.profileImage(),
-                clientKeys!!.publicKey, profile.server())
+        val requestProfileMessage = RequestProfileMessage(loadPublicKey(profile.publicKey()), profile.server(), profile.alias(), "", ByteArrayInputStream(profile.profileImage()))
         sendMessage(requestProfileMessage, server, loadPublicKey(publicKey))
     }
 
-    private fun sendMessage(message: AbstractDataMessage, server: String, publicKey: PublicKey) {
+    private fun sendMessage(message: ClientMessage, server: String, publicKey: PublicKey) {
         val msgObj = mServiceHandler.obtainMessage()
         msgObj.obj = SendMessage(
                 message,
@@ -176,15 +173,12 @@ class WebSocketService : Service() {
 
 
     private inner class MessageListener : ClientMessageListener {
-        override fun handleDataMessage(msg: AbstractDataMessage) {
-            val publicKey = RsaKeyToStringConverter.encodePublicKey(msg.senderPublicKey)
+        override fun handleDataMessage(msg: ClientMessage) {
+            val publicKey = RsaKeyToStringConverter.encodePublicKey(msg.header.senderPublicKey)
             if (msg is TextMessage) {
                 if (dbHelper.contactExistsForPublicKey(publicKey)) {
                     dbHelper.insertMessage(msg)
-                    // TODO: Refresh display
-
                     notifyUi(publicKey)
-                    Toast.makeText(this@WebSocketService, "Message received.", Toast.LENGTH_SHORT).show()
                 } else {
                     // TODO: Ask user if we should create an anonymous contact and request profile?
                     Log.e("DbHelper", "No contact found in database.")
@@ -192,10 +186,12 @@ class WebSocketService : Service() {
             } else if (msg is RequestProfileMessage) {
                 // TODO: Only send profile data to existing contacts or if user confirms sharing data
                 val profile = Profile(applicationContext)
-                sendMessage(ProfileDataMessage(profile.alias(), "", profile.profileImage(), loadPublicKey(profile.publicKey())), msg.server, msg.senderPublicKey)
+                //PublicKey sender, String senderServer, String alias, String statusText, InputStream profileImage
+                sendMessage(ProfileDataMessage(loadPublicKey(profile.publicKey()), profile.server(), profile.alias(), "", ByteArrayInputStream(profile.profileImage())),
+                        msg.header.senderServer, Crypt.decodeKey(msg.header.senderPublicKey))
             } else if (msg is ProfileDataMessage) {
                 if (dbHelper.contactExistsForPublicKey(publicKey)) {
-                    dbHelper.updateContact(publicKey, msg.alias, msg.statusText, msg.profileImage)
+                    dbHelper.updateContact(publicKey, msg.alias, msg.statusText, ByteArrayHelper.toByteArray(msg.profileImage))
                 }
                 // TODO: repaint
             } else {
@@ -210,6 +206,6 @@ class WebSocketService : Service() {
     }
 
     private inner class SendTextMessage(val msg: String, val contact: Contact)
-    private inner class SendMessage(val msg: AbstractDataMessage, val server: String, val recipientPublicKey: PublicKey)
+    private inner class SendMessage(val msg: ClientMessage, val server: String, val recipientPublicKey: PublicKey)
 }
 
