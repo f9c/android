@@ -133,12 +133,12 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 3) {
 
     fun loadMessages(contactId: Int): MutableList<Message> {
 
-        val c = readableDatabase.rawQuery("SELECT message, incoming  FROM MESSAGES WHERE contactRowId = ? order by receiveDate asc", arrayOf(contactId.toString()))
+        val c = readableDatabase.rawQuery("SELECT message, sendDate, incoming  FROM MESSAGES WHERE contactRowId = ? order by receiveDate asc", arrayOf(contactId.toString()))
 
         val result = mutableListOf<Message>()
 
         while (c.moveToNext()) {
-            result.add(Message(c.getString(0), c.getInt(1) == 1))
+            result.add(Message(c.getString(0), c.getLong(1), c.getInt(2) == 1))
         }
         c.close()
         return result

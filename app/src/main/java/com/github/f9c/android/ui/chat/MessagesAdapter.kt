@@ -1,5 +1,6 @@
 package com.github.f9c.android.ui.chat
 
+import android.content.Context
 import android.support.constraint.ConstraintLayout
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -7,8 +8,14 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.github.f9c.android.R
 import com.github.f9c.android.message.Message
+import java.util.*
 
-class MessagesAdapter(private var _messages: MutableList<Message>) : RecyclerView.Adapter<MessagesAdapter.ViewHolder>() {
+class MessagesAdapter(private var _messages: MutableList<Message>, private val context: Context) : RecyclerView.Adapter<MessagesAdapter.ViewHolder>() {
+    private val timeFormat = android.text.format.DateFormat.getTimeFormat(context)
+    private val completeFormat = android.text.format.DateFormat.getDateFormat(context)
+
+
+    val TWENTY_HOURS : Long = 1000 * 60 * 60 * 20
 
     class ViewHolder(val textView: ConstraintLayout) : RecyclerView.ViewHolder(textView)
 
@@ -29,8 +36,21 @@ class MessagesAdapter(private var _messages: MutableList<Message>) : RecyclerVie
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val textView = holder.textView.getViewById(R.id.messageText) as TextView
+        val dateView = holder.textView.getViewById(R.id.messageDate) as TextView
+
         val message = messages[position]
+
         textView.text = message.text
+
+        val age = System.currentTimeMillis() - message.timestamp;
+        val date = Date(message.timestamp)
+
+        if (age < TWENTY_HOURS) {
+            dateView.text = timeFormat.format(date)
+        } else {
+            dateView.text = String.format("%s %s", completeFormat.format(date), timeFormat.format(date))
+        }
+
         if (message.incoming) {
             textView.textAlignment = TextView.TEXT_ALIGNMENT_VIEW_START
         } else {

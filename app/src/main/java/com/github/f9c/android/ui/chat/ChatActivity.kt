@@ -36,7 +36,7 @@ class ChatActivity : AppCompatActivity() {
 
         recyclerView = findViewById<RecyclerView>(R.id.chatHistory).apply {
             layoutManager = LinearLayoutManager(this@ChatActivity)
-            messagesAdapter = MessagesAdapter(dbHelper.loadMessages(contact!!.rowId))
+            messagesAdapter = MessagesAdapter(dbHelper.loadMessages(contact!!.rowId), applicationContext)
             adapter = messagesAdapter
         }
         scrollToEnd()
