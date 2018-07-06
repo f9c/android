@@ -8,6 +8,7 @@ import android.support.v4.content.LocalBroadcastManager
 import android.util.Log
 import android.widget.Toast
 import com.github.f9c.Client
+import com.github.f9c.android.BuildConfig
 import com.github.f9c.android.contact.Contact
 import com.github.f9c.android.profile.Profile
 import com.github.f9c.android.util.Base64
@@ -82,7 +83,7 @@ class WebSocketService : Service() {
                 server = preferences.getString(SERVER, "")
                 if ("" != server) {
                     try {
-                        client = Client(server, 443, clientKeys, clientMessageListener)
+                        client = Client(server, clientKeys, clientMessageListener, BuildConfig.DEBUG)
                     } catch (e: WebSocketException) {
                         Log.e("websocket", "Connection to $server failed.", e)
                         Toast.makeText(this@WebSocketService,
