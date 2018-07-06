@@ -14,8 +14,8 @@ import android.preference.PreferenceManager
 import android.widget.EditText
 import android.widget.TextView
 import com.github.f9c.android.profile.Profile
+import com.github.f9c.android.profile.ProfileConstants
 import com.github.f9c.android.websocket.WebSocketService
-import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.max
 
@@ -28,16 +28,14 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.settings)
 
-        val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        val profile = Profile(applicationContext)
 
-        findViewById<EditText>(R.id.settings_server).setText(
-                preferences.getString("server", "develop.f9c.eu"), TextView.BufferType.EDITABLE)
-
-        findViewById<EditText>(R.id.settings_alias).setText(
-                preferences.getString("alias", "anonymous"), TextView.BufferType.EDITABLE)
+        findViewById<EditText>(R.id.settings_server).setText(profile.server(), TextView.BufferType.EDITABLE)
+        findViewById<EditText>(R.id.settings_alias).setText(profile.alias(), TextView.BufferType.EDITABLE)
+        findViewById<EditText>(R.id.settings_status_text).setText(profile.statusText(), TextView.BufferType.EDITABLE)
 
 
-        val profileImageFile = Profile(applicationContext).profileImageFile()
+        val profileImageFile = profile.profileImageFile()
         if (profileImageFile.exists()) {
             val profileImage = BitmapFactory.decodeFile(profileImageFile.absolutePath)
             findViewById<ImageView>(R.id.settings_profileImgView).setImageBitmap(profileImage)
@@ -53,10 +51,11 @@ class SettingsActivity : AppCompatActivity() {
             val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
             val editor = preferences.edit()
 
-            editor.putString("server", findViewById<EditText>(R.id.settings_server).text.toString())
-            editor.putString("alias", findViewById<EditText>(R.id.settings_alias).text.toString())
+            editor.putString(ProfileConstants.SERVER, findViewById<EditText>(R.id.settings_server).text.toString())
+            editor.putString(ProfileConstants.ALIAS, findViewById<EditText>(R.id.settings_alias).text.toString())
+            editor.putString(ProfileConstants.STATUS_TEXT, findViewById<EditText>(R.id.settings_status_text).text.toString())
 
-            editor.commit()
+            editor.apply()
             finish()
 
             webSocketService!!.openConnection()
@@ -101,7 +100,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    val mConnection = object : ServiceConnection {
+    private val mConnection = object : ServiceConnection {
 
         override fun onBindingDied(name: ComponentName?) {
 

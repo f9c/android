@@ -4,24 +4,32 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="40dp">
+    android:layout_height="50dp">
 
     <TextView
         android:id="@+id/contactAlias"
         android:layout_width="wrap_content"
-        android:layout_height="26dp"
+        android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:text="TextView"
-
+        android:text="Alias"
         android:textSize="@dimen/contactAliasFontSize"
         app:layout_constraintStart_toEndOf="@+id/contactProfileImage"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:id="@+id/contactAliasStatusText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Status"
+        android:textSize="@dimen/contactAliasStatusTextFontSize"
+        app:layout_constraintStart_toEndOf="@+id/contactProfileImage"
+        app:layout_constraintTop_toBottomOf="@id/contactAlias"
+        android:layout_marginStart="8dp"/>
+
     <ImageView
         android:id="@+id/contactProfileImage"
-        android:layout_width="35dp"
-        android:layout_height="35dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_marginStart="5dp"
         android:layout_marginTop="5dp"
         app:layout_constraintStart_toStartOf="parent"

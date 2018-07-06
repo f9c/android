@@ -6,7 +6,10 @@
     <string name="profileImage">Profile Image</string>
     <string name="selectImage">Select</string>
     <string name="add_contact">Add contact</string>
-    <string name="remove_contact">Remove</string>
+    <string name="remove_contact">Remove contact</string>
     <string name="confirm_remove_contact">Do you really want to remove contact \'%1$s\'?</string>
     <string name="contact_removed">Contact has been removed</string>
+    <string name="settings_status_text">Status Text</string>
+    <string name="update_contact_profile">Update Profile</string>
+    <string name="msg_contact_data_requested">Contact profile update requested.</string>
 </resources>

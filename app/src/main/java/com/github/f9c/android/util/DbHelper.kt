@@ -12,16 +12,19 @@ import com.github.f9c.android.contact.Contact
 import com.github.f9c.client.datamessage.TextMessage
 
 
-class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 2) {
+class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 3) {
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL("CREATE TABLE CONTACTS (publicKey TEXT primary key, alias TEXT unique, server TEXT, profileIcon BLOB)")
+        db.execSQL("CREATE TABLE CONTACTS (publicKey TEXT primary key, alias TEXT unique, statusText Text, server TEXT, profileIcon BLOB)")
         db.execSQL("CREATE TABLE MESSAGES (contactRowId INTEGER, sendDate INT, receiveDate INT, message TEXT, read INTEGER, incoming INTEGER)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) {
             db.execSQL("ALTER TABLE CONTACTS add server TEXT")
+        }
+        if (oldVersion < 3) {
+            db.execSQL("ALTER TABLE CONTACTS add statusText TEXT")
         }
     }
 
@@ -53,14 +56,14 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 2) {
         val contentValues = ContentValues()
         contentValues.put("alias", alias)
         contentValues.put("profileIcon", profileImage)
-        // TODO: insert status text
+        contentValues.put("statusText", statusText)
         writableDatabase.update("CONTACTS", contentValues, "publicKey = ?", arrayOf(publicKey))
 
     }
 
     fun loadContacts(): MutableList<Contact> {
 
-        val c = readableDatabase.rawQuery("SELECT rowId, publicKey, server, alias, profileIcon from CONTACTS order by alias", arrayOf())
+        val c = readableDatabase.rawQuery("SELECT rowId, publicKey, server, alias, statusText, profileIcon from CONTACTS order by alias", arrayOf())
 
         val result = mutableListOf<Contact>()
 
@@ -113,7 +116,7 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 2) {
     }
 
     fun loadContact(contactId: String): Contact {
-        val c = readableDatabase.rawQuery("SELECT rowId, publicKey, server, alias, profileIcon from CONTACTS where rowId = ?", arrayOf(contactId))
+        val c = readableDatabase.rawQuery("SELECT rowId, publicKey, server, alias, statusText, profileIcon from CONTACTS where rowId = ?", arrayOf(contactId))
         c.use { c ->
             c.moveToFirst()
             return contactFromRow(c)
@@ -126,7 +129,7 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 2) {
     }
 
     private fun contactFromRow(c: Cursor) =
-            Contact(c.getInt(0), c.getString(1), c.getString(2), c.getString(3), toImage(c.getBlob(4)))
+            Contact(c.getInt(0), c.getString(1), c.getString(2), c.getString(3), c.getString(4), toImage(c.getBlob(5)))
 
     fun loadMessages(contactId: Int): MutableList<Message> {
 

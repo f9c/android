@@ -7,6 +7,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.github.f9c.android.R
 import com.github.f9c.android.contact.Contact
+import android.view.ViewGroup
+
+
 
 
 
@@ -21,6 +24,8 @@ class ContactsAdapter(private var _contacts: MutableList<Contact>) : RecyclerVie
         }
 
         override fun onCreateContextMenu(menu: ContextMenu, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
+            menu.add(Menu.NONE, R.id.menu_contact_update_profile,
+                    Menu.NONE, R.string.update_contact_profile)
             menu.add(Menu.NONE, R.id.menu_contact_remove,
                     Menu.NONE, R.string.remove_contact)
         }
@@ -49,7 +54,18 @@ class ContactsAdapter(private var _contacts: MutableList<Contact>) : RecyclerVie
         }
 
         val contact = contacts[position]
-        (holder.textView.getViewById(R.id.contactAlias) as TextView).text = contact.alias
+        val aliasTextView = holder.textView.getViewById(R.id.contactAlias) as TextView
+        aliasTextView.text = contact.alias
+        (holder.textView.getViewById(R.id.contactAliasStatusText) as TextView).text = contact.statusText
+
+        // TODO: Better way of centering the alias depending on the status text being available or
+        // not
+        val p = aliasTextView.layoutParams as ViewGroup.MarginLayoutParams
+        if (contact.statusText == null || contact.statusText == "") {
+            p.topMargin = 17
+        } else {
+            p.topMargin = 0
+        }
 
         if (contact.profileIcon != null) {
             (holder.textView.getViewById(R.id.contactProfileImage) as ImageView).setImageBitmap(contact.profileIcon)

@@ -5,17 +5,22 @@ import android.preference.PreferenceManager
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
-import java.security.PublicKey
 
+object ProfileConstants {
+    val ALIAS = "alias"
+    val STATUS_TEXT = "statusText"
+    val SERVER = "server"
+    val PUBLIC_KEY = "PUBLIC_KEY"
+    val PRIVATE_KEY = "PRIVATE_KEY"
+}
 class Profile(private var context: Context) {
-    private val ALIAS = "alias"
-    private val SERVER = "server"
-    private val PUBLIC_KEY = "PUBLIC_KEY"
-    private val PRIVATE_KEY = "PRIVATE_KEY"
-
 
     fun alias(): String {
-        return PreferenceManager.getDefaultSharedPreferences(context).getString(ALIAS, "anonymous")
+        return PreferenceManager.getDefaultSharedPreferences(context).getString(ProfileConstants.ALIAS, "anonymous")
+    }
+
+    fun statusText(): String {
+        return PreferenceManager.getDefaultSharedPreferences(context).getString(ProfileConstants.STATUS_TEXT, "I hart you my friend!")
     }
 
     fun profileImageFile(): File {
@@ -33,10 +38,10 @@ class Profile(private var context: Context) {
     }
 
     fun publicKey(): String {
-        return PreferenceManager.getDefaultSharedPreferences(context).getString(PUBLIC_KEY, "anonymous")
+        return PreferenceManager.getDefaultSharedPreferences(context).getString(ProfileConstants.PUBLIC_KEY, "anonymous")
     }
 
     fun server(): String? {
-        return PreferenceManager.getDefaultSharedPreferences(context).getString(SERVER, "")
+        return PreferenceManager.getDefaultSharedPreferences(context).getString(ProfileConstants.SERVER, "")
     }
 }

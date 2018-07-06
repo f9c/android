@@ -3,4 +3,5 @@
     <dimen name="contactAliasFontSize">20dp</dimen>
     <dimen name="messageFontSize">15dp</dimen>
     <dimen name="buttonHeight">60dp</dimen>
+    <dimen name="contactAliasStatusTextFontSize">14dp</dimen>
 </resources>

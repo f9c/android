@@ -86,7 +86,7 @@ class ChatActivity : AppCompatActivity() {
     private inner class Receiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent!!.extras[WebSocketServiceConstants.CONTACT] == contact!!.publicKey) {
-                refreshMessages();
+                refreshMessages()
             }
         }
 

@@ -3,6 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".ui.contacts.ContactsActivity">
     <item
+        android:id="@+id/menu_contact_update_profile"
+        android:orderInCategory="100"
+        android:title="@string/update_contact_profile"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/menu_contact_remove"
         android:orderInCategory="100"
         android:title="@string/remove_contact"

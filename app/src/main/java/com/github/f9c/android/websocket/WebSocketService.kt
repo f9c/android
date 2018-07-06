@@ -32,6 +32,7 @@ import java.security.spec.X509EncodedKeySpec
 
 object WebSocketServiceConstants {
     val MESSAGE_RECEIVED = "CHAT_MESSAGE_RECEIVED"
+    val CONTACTS_CHANGED = "CHAT_MESSAGE_RECEIVED"
     val CONTACT = "CONTACT"
 }
 
@@ -150,16 +151,23 @@ class WebSocketService : Service() {
         mServiceHandler.sendMessage(msgObj)
     }
 
-    fun notifyUi(publicKey: String) {
+    fun notifyUiOfNewMessage(publicKey: String) {
         val intent = Intent(WebSocketServiceConstants.MESSAGE_RECEIVED)
         intent.putExtra(WebSocketServiceConstants.CONTACT, publicKey)
         broadcaster!!.sendBroadcast(intent)
     }
 
+    fun notifyUiOfContactListChanged() {
+        broadcaster!!.sendBroadcast(Intent(WebSocketServiceConstants.CONTACTS_CHANGED))
+    }
+
+    fun requestProfileData(contact: Contact) {
+        requestProfileData(contact.server, contact.publicKey)
+    }
+
     fun requestProfileData(server: String, publicKey: String) {
-        // TODO: Fill status text
         val profile = Profile(applicationContext)
-        val requestProfileMessage = RequestProfileMessage(loadPublicKey(profile.publicKey()), profile.server(), profile.alias(), "", ByteArrayInputStream(profile.profileImage()))
+        val requestProfileMessage = RequestProfileMessage(loadPublicKey(profile.publicKey()), profile.server(), profile.alias(), profile.statusText(), ByteArrayInputStream(profile.profileImage()))
         sendMessage(requestProfileMessage, loadPublicKey(publicKey), server)
     }
 
@@ -173,13 +181,14 @@ class WebSocketService : Service() {
     }
 
 
+
     private inner class MessageListener : ClientMessageListener {
         override fun handleDataMessage(msg: ClientMessage) {
             val publicKey = RsaKeyToStringConverter.encodePublicKey(msg.header.senderPublicKey)
             if (msg is TextMessage) {
                 if (dbHelper.contactExistsForPublicKey(publicKey)) {
                     dbHelper.insertMessage(msg)
-                    notifyUi(publicKey)
+                    notifyUiOfNewMessage(publicKey)
                 } else {
                     // TODO: Ask user if we should create an anonymous contact and request profile?
                     Log.e("DbHelper", "No contact found in database.")
@@ -187,14 +196,13 @@ class WebSocketService : Service() {
             } else if (msg is RequestProfileMessage) {
                 // TODO: Only send profile data to existing contacts or if user confirms sharing data
                 val profile = Profile(applicationContext)
-                //PublicKey sender, String senderServer, String alias, String statusText, InputStream profileImage
-                sendMessage(ProfileDataMessage(loadPublicKey(profile.publicKey()), profile.server(), profile.alias(), "", ByteArrayInputStream(profile.profileImage())),
+                sendMessage(ProfileDataMessage(loadPublicKey(profile.publicKey()), profile.server(), profile.alias(), profile.statusText(), ByteArrayInputStream(profile.profileImage())),
                         Crypt.decodeKey(msg.header.senderPublicKey), msg.header.senderServer)
             } else if (msg is ProfileDataMessage) {
                 if (dbHelper.contactExistsForPublicKey(publicKey)) {
                     dbHelper.updateContact(publicKey, msg.alias, msg.statusText, ByteArrayHelper.toByteArray(msg.profileImage))
+                    notifyUiOfContactListChanged()
                 }
-                // TODO: repaint
             } else {
                 Log.e("MSG", "Got unexpected message: " + msg.javaClass)
             }
