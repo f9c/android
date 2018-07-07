@@ -10,7 +10,7 @@ android {
         applicationId "com.github.f9c.android"
         minSdkVersion 22
         targetSdkVersion 27
-        versionCode 3
+        versionCode 4
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }

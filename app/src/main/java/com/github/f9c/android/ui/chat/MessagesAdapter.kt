@@ -10,12 +10,10 @@ import com.github.f9c.android.R
 import com.github.f9c.android.message.Message
 import java.util.*
 
-class MessagesAdapter(private var _messages: MutableList<Message>, private val context: Context) : RecyclerView.Adapter<MessagesAdapter.ViewHolder>() {
+class MessagesAdapter(private var _messages: MutableList<Message>, context: Context) : RecyclerView.Adapter<MessagesAdapter.ViewHolder>() {
     private val timeFormat = android.text.format.DateFormat.getTimeFormat(context)
     private val completeFormat = android.text.format.DateFormat.getDateFormat(context)
-
-
-    val TWENTY_HOURS : Long = 1000 * 60 * 60 * 20
+    private val twentyHours : Long = 1000 * 60 * 60 * 20
 
     class ViewHolder(val textView: ConstraintLayout) : RecyclerView.ViewHolder(textView)
 
@@ -42,10 +40,10 @@ class MessagesAdapter(private var _messages: MutableList<Message>, private val c
 
         textView.text = message.text
 
-        val age = System.currentTimeMillis() - message.timestamp;
+        val age = System.currentTimeMillis() - message.timestamp
         val date = Date(message.timestamp)
 
-        if (age < TWENTY_HOURS) {
+        if (age < twentyHours) {
             dateView.text = timeFormat.format(date)
         } else {
             dateView.text = String.format("%s %s", completeFormat.format(date), timeFormat.format(date))

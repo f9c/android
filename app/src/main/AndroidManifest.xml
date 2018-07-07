@@ -56,6 +56,14 @@
             android:theme="@style/AppTheme.NoActionBar">
         </activity>
 
+        <receiver
+            android:name="com.github.f9c.android.settings.ReferrerReceiver"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="com.android.vending.INSTALL_REFERRER" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".websocket.WebSocketService"
             android:enabled="true"
