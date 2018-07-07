@@ -12,4 +12,6 @@
     <string name="settings_status_text">Status Text</string>
     <string name="update_contact_profile">Update Profile</string>
     <string name="msg_contact_data_requested">Contact profile update requested.</string>
+    <string name="channel_name">F9C Messages</string>
+    <string name="channel_description">Message notifications from F9C</string>
 </resources>

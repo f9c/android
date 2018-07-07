@@ -1,5 +1,6 @@
 package com.github.f9c.android.websocket
 
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.os.*
@@ -32,7 +33,7 @@ import java.security.spec.X509EncodedKeySpec
 
 object WebSocketServiceConstants {
     val MESSAGE_RECEIVED = "CHAT_MESSAGE_RECEIVED"
-    val CONTACTS_CHANGED = "CHAT_MESSAGE_RECEIVED"
+    val CONTACTS_CHANGED = "CONTACTS_CHANGED"
     val CONTACT = "CONTACT"
 }
 

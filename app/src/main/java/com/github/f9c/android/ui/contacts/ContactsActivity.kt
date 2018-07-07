@@ -2,7 +2,10 @@ package com.github.f9c.android.ui.contacts
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.*
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.support.v7.app.AppCompatActivity
@@ -26,6 +29,8 @@ import com.github.f9c.android.profile.Profile
 import com.github.f9c.android.util.RsaKeyToStringConverter.encodePublicKey
 import com.github.f9c.android.websocket.WebSocketService
 import com.github.f9c.android.ui.chat.ChatActivity
+import com.github.f9c.android.ui.chat.ChatConstants
+import com.github.f9c.android.ui.chat.MessageNotificationReceiver
 import com.github.f9c.android.ui.settings.SettingsActivity
 import com.github.f9c.android.util.Base64
 import com.github.f9c.android.websocket.WebSocketServiceConstants
@@ -55,6 +60,9 @@ class ContactsActivity : AppCompatActivity() {
         setContentView(R.layout.contacts)
         setSupportActionBar(toolbar)
 
+        createNotificationChannel()
+
+        createBroadCastReceiver()
 
         if (intent.data != null) {
             onNewIntent(intent)
@@ -138,6 +146,15 @@ class ContactsActivity : AppCompatActivity() {
         broadcastReceiver = Receiver()
         LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver!!,
                 IntentFilter(WebSocketServiceConstants.CONTACTS_CHANGED))
+    }
+
+    private fun createBroadCastReceiver() {
+        val messageNotificationReceiver = MessageNotificationReceiver()
+
+        application.registerActivityLifecycleCallbacks(messageNotificationReceiver)
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(messageNotificationReceiver,
+                IntentFilter(WebSocketServiceConstants.MESSAGE_RECEIVED))
     }
 
     override fun onContextItemSelected(item: MenuItem): Boolean {
@@ -234,6 +251,18 @@ class ContactsActivity : AppCompatActivity() {
         unbindService(mConnection)
         super.onDestroy()
     }
+
+
+    private fun createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            var channel = NotificationChannel(ChatConstants.CHANNEL_ID, getString(R.string.channel_name), NotificationManager.IMPORTANCE_DEFAULT)
+            channel.description = getString(R.string.channel_description);
+            (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
+        }
+    }
+
 
     private inner class Receiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {

@@ -107,13 +107,31 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 3) {
     }
 
 
-    private fun loadContactRowId(publicKeyString: String): Int {
+    fun loadContactRowId(publicKeyString: String): Int {
         val c = readableDatabase.rawQuery("SELECT rowId from CONTACTS WHERE publicKey=?", arrayOf(publicKeyString))
         c.use { c ->
             c.moveToFirst()
             return c.getInt(0)
         }
     }
+
+    fun loadContactByPublicKey(publicKey: String): Contact {
+        val c = readableDatabase.rawQuery("SELECT rowId, publicKey, server, alias, statusText, profileIcon from CONTACTS where publicKey = ?", arrayOf(publicKey))
+        c.use { c ->
+            c.moveToFirst()
+            return contactFromRow(c)
+        }
+    }
+
+    fun loadContactRowIdForAlias(alias: String): Int {
+        val c = readableDatabase.rawQuery("SELECT rowId from CONTACTS where alias = ?", arrayOf(alias))
+        c.use { c ->
+            c.moveToFirst()
+            return c.getInt(0)
+        }
+    }
+
+
 
     fun loadContact(contactId: String): Contact {
         val c = readableDatabase.rawQuery("SELECT rowId, publicKey, server, alias, statusText, profileIcon from CONTACTS where rowId = ?", arrayOf(contactId))
@@ -144,6 +162,29 @@ class DbHelper(context: Context) : SQLiteOpenHelper(context, "f9c", null, 3) {
         return result
     }
 
+    fun loadUnreadMessages(): MutableMap<String, MutableList<String>> {
+        val c = readableDatabase.rawQuery("SELECT C.alias, M.message from CONTACTS C, MESSAGES M where M.read = 0 AND C.rowId = M.contactRowId order by C.alias, M.receiveDate", arrayOf())
+
+        val result = mutableMapOf<String, MutableList<String>>()
+
+        while (c.moveToNext()) {
+            val alias = c.getString(0)
+            val message = c.getString(1)
+
+            if (!result.containsKey(alias)) {
+                result[alias] = mutableListOf()
+            }
+            result[alias]!!.add(message)
+        }
+        c.close()
+        return result
+    }
+
+    fun markMessagesRead(contactId: String) {
+        val contentValues = ContentValues()
+        contentValues.put("read", 1)
+        writableDatabase.update("MESSAGES", contentValues, "contactRowId = ? and read = 0", arrayOf(contactId))
+    }
 
 
 }

@@ -3,19 +3,24 @@ package com.github.f9c.android.ui.chat
 import android.content.*
 import android.os.Bundle
 import android.os.IBinder
+import android.os.Vibrator
 import android.support.v4.content.LocalBroadcastManager
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.inputmethod.InputMethodManager
-import com.github.f9c.android.contact.Contact
-import com.github.f9c.android.util.DbHelper
 import com.github.f9c.android.R
-
+import com.github.f9c.android.contact.Contact
+import com.github.f9c.android.ui.contacts.ContactsActivity
+import com.github.f9c.android.util.DbHelper
 import com.github.f9c.android.websocket.WebSocketService
 import com.github.f9c.android.websocket.WebSocketServiceConstants
 import kotlinx.android.synthetic.main.chat.*
 
+
+object ChatConstants {
+    val CHANNEL_ID: String = "F9C"
+}
 class ChatActivity : AppCompatActivity() {
     private var webSocketService: WebSocketService? = null
     private var contact: Contact? = null
@@ -23,6 +28,7 @@ class ChatActivity : AppCompatActivity() {
     private var messagesAdapter: MessagesAdapter? = null
     private var recyclerView: RecyclerView? = null
     private var broadcastReceiver: BroadcastReceiver? = null
+    var alias: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +37,7 @@ class ChatActivity : AppCompatActivity() {
         val extras = intent.extras
         val contactId = extras.getString("contact")
         contact = dbHelper.loadContact(contactId)
+        alias = contact!!.alias
 
         chatToolbar.title = contact!!.alias
 
@@ -40,6 +47,8 @@ class ChatActivity : AppCompatActivity() {
             adapter = messagesAdapter
         }
         scrollToEnd()
+
+        dbHelper.markMessagesRead(contactId)
 
         sendChat.setOnClickListener { _ ->
             val msg = chatMessageView.text
@@ -57,6 +66,11 @@ class ChatActivity : AppCompatActivity() {
         }
 
         broadcastReceiver = Receiver()
+    }
+
+    override fun onBackPressed() {
+        this@ChatActivity.startActivity(Intent(applicationContext, ContactsActivity::class.java))
+        finish()
     }
 
     private fun refreshMessages() {
@@ -85,10 +99,15 @@ class ChatActivity : AppCompatActivity() {
 
     private inner class Receiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent!!.extras[WebSocketServiceConstants.CONTACT] == contact!!.publicKey) {
+            val contactPublicKey = intent!!.extras[WebSocketServiceConstants.CONTACT] as String
+            if (contactPublicKey == contact!!.publicKey) {
                 refreshMessages()
+                dbHelper.markMessagesRead(contact!!.rowId.toString())
+                val v = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                v.vibrate(200)
             }
         }
+
 
     }
 
