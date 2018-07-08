@@ -60,6 +60,8 @@ class ContactsActivity : AppCompatActivity() {
         setContentView(R.layout.contacts)
         setSupportActionBar(toolbar)
 
+        supportActionBar!!.setIcon(R.mipmap.ic_launcher)
+
         createNotificationChannel()
 
         createBroadCastReceiver()

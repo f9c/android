@@ -7,10 +7,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.github.f9c.android.R
 import com.github.f9c.android.contact.Contact
-import android.view.ViewGroup
-
-
-
+import com.github.f9c.android.ui.util.ProfileIcon
 
 
 class ContactsAdapter(private var _contacts: MutableList<Contact>) : RecyclerView.Adapter<ContactsAdapter.ViewHolder>() {
@@ -67,13 +64,12 @@ class ContactsAdapter(private var _contacts: MutableList<Contact>) : RecyclerVie
             p.topMargin = 0
         }
 
-        if (contact.profileIcon != null) {
-            (holder.textView.getViewById(R.id.contactProfileImage) as ImageView).setImageBitmap(contact.profileIcon)
+        val profileIcon = contact.profileIcon
+        if (profileIcon != null) {
+            (holder.textView.getViewById(R.id.contactProfileImage) as ImageView).setImageDrawable(ProfileIcon.roundedIcon(profileIcon))
         } else {
             (holder.textView.getViewById(R.id.contactProfileImage) as ImageView).setImageResource(R.mipmap.ic_launcher)
         }
-
-
     }
 
     override fun onViewRecycled(holder: ViewHolder) {

@@ -1,6 +1,7 @@
 package com.github.f9c.android.ui.chat
 
 import android.content.*
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.IBinder
 import android.os.Vibrator
@@ -9,13 +10,16 @@ import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.inputmethod.InputMethodManager
+import android.widget.ImageView
 import com.github.f9c.android.R
 import com.github.f9c.android.contact.Contact
 import com.github.f9c.android.ui.contacts.ContactsActivity
+import com.github.f9c.android.ui.util.ProfileIcon
 import com.github.f9c.android.util.DbHelper
 import com.github.f9c.android.websocket.WebSocketService
 import com.github.f9c.android.websocket.WebSocketServiceConstants
 import kotlinx.android.synthetic.main.chat.*
+import kotlinx.android.synthetic.main.contacts.*
 
 
 object ChatConstants {
@@ -40,6 +44,17 @@ class ChatActivity : AppCompatActivity() {
         alias = contact!!.alias
 
         chatToolbar.title = contact!!.alias
+        setSupportActionBar(chatToolbar)
+
+
+
+        val profileIcon = contact!!.profileIcon
+        if (profileIcon != null) {
+            val scaledProfileIcon = Bitmap.createScaledBitmap(profileIcon, 60, 60, true)
+            supportActionBar!!.setIcon(ProfileIcon.roundedIcon(scaledProfileIcon))
+        } else {
+            supportActionBar!!.setIcon(R.mipmap.ic_launcher)
+        }
 
         recyclerView = findViewById<RecyclerView>(R.id.chatHistory).apply {
             layoutManager = LinearLayoutManager(this@ChatActivity)
